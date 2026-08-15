@@ -22,4 +22,5 @@ public sealed class DeviceInfo
     public double DownKbps { get; set; }
     public double UpKbps { get; set; }
     public DateTime LastSeen { get; set; } = DateTime.UtcNow;
+    public string CustomName { get; set; } = "";
 }

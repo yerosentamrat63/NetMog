@@ -75,11 +75,20 @@ const fmtTime = (iso) => {
 
 function cardHtml(d) {
   const cls = d.isSelf || d.isGateway ? "trustcard" : d.state === 1 ? "cutcard" : d.state === 2 ? "metercard" : "";
-  const name = d.isSelf
-    ? `<span class="self">${esc(d.hostName || "This PC")}</span>`
+  const autoName = d.isSelf
+    ? (d.hostName || "This PC")
     : d.isGateway
-      ? `<span class="gw">Router</span>`
-      : esc(d.hostName || "<unknown>");
+      ? "Router"
+      : (d.hostName || "");
+  const displayName = d.customName || autoName;
+  const nameHtml = d.isSelf
+    ? `<span class="self">${esc(displayName)}</span>`
+    : d.isGateway
+      ? `<span class="gw">${esc(displayName)}</span>`
+      : `<span class="editable-name" data-mac="${esc(d.mac)}" data-auto="${esc(autoName)}" title="Click to rename">${esc(displayName || "<unknown>")}</span>`;
+  const autoLabel = (d.customName && autoName && !d.isSelf && !d.isGateway)
+    ? `<span class="auto-name">${esc(autoName)}</span>`
+    : "";
 
   const tags = [];
   if (d.isSelf) tags.push(`<span class="tag blue">You</span>`);
@@ -109,7 +118,7 @@ function cardHtml(d) {
       : `<button class="warn" data-act="monitor" data-ip="${d.ip}">⦿ Monitor</button>`;
 
   return `<div class="card ${cls}" draggable="true" data-ip="${d.ip}">
-    <div class="cname">${name}${tags.join("")}</div>
+    <div class="cname">${nameHtml}${autoLabel}${tags.join("")}</div>
     <div class="crow"><b>IP</b><span class="v masked">${esc(ip)}</span></div>
     <div class="crow"><b>MAC</b><span class="v masked">${esc(d.mac)}</span>
       <button class="copy" title="Copy MAC" data-copy="${esc(d.mac)}">⧉</button></div>
@@ -277,7 +286,8 @@ document.querySelectorAll(".tab").forEach((btn) => {
 
 function devName(ip) {
   const d = state.devices.find((x) => x.ip === ip);
-  return d ? d.hostName || d.ip : ip;
+  if (!d) return ip;
+  return d.customName || d.hostName || d.ip;
 }
 
 document.querySelectorAll(".cards").forEach((col) => {
@@ -294,6 +304,11 @@ document.querySelectorAll(".cards").forEach((col) => {
       else act(verb === "cut" ? "kill" : verb, ip, devName(ip));
       return;
     }
+    const editableName = e.target.closest(".editable-name");
+    if (editableName) {
+      startRename(editableName);
+      return;
+    }
     const card = e.target.closest(".card");
     if (card) {
       state.selectedIp = card.dataset.ip;
@@ -301,6 +316,34 @@ document.querySelectorAll(".cards").forEach((col) => {
     }
   });
 });
+
+/* inline rename */
+function startRename(el) {
+  const mac = el.dataset.mac;
+  const current = el.textContent;
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = current === "<unknown>" ? "" : current;
+  input.placeholder = el.dataset.auto || "Device name";
+  el.replaceWith(input);
+  input.focus();
+  input.select();
+
+  const save = async () => {
+    const name = input.value.trim();
+    await api("/api/rename", { mac, name });
+    const d = state.devices.find((x) => x.mac === mac);
+    if (d) d.customName = name;
+    render();
+    toast(name ? `Renamed to "${name}"` : "Name cleared");
+  };
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); save(); }
+    if (e.key === "Escape") { render(); }
+  });
+  input.addEventListener("blur", save);
+}
 
 /* drag & drop: users -> managing = cut, managing -> users = restore */
 let dragIp = null;
@@ -377,6 +420,12 @@ document.addEventListener("contextmenu", (e) => {
     add(state.meteringIp === ip ? "Stop monitoring" : "Monitor bandwidth", () => toggleMonitor(ip, dev.hostName || ip), "var(--warn)");
   }
   sep();
+  if (!dev.isSelf && !dev.isGateway) {
+    add("Rename device", () => {
+      const el = document.querySelector(`.editable-name[data-mac="${CSS.escape(dev.mac)}"]`);
+      if (el) startRename(el);
+    }, "var(--fg)");
+  }
   add("Copy MAC", () => navigator.clipboard.writeText(dev.mac));
   add("Copy IP", () => navigator.clipboard.writeText(dev.ip));
 

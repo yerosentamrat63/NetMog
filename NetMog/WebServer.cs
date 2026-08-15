@@ -135,6 +135,13 @@ public sealed class WebServer
                     await Json(ctx, new { ok = true, on = _dm.NetLock });
                     return;
 
+                case "POST /api/rename":
+                    GetMacName(ctx, out var renameMac, out var renameName);
+                    if (!string.IsNullOrEmpty(renameMac))
+                        _dm.SetDeviceName(renameMac, renameName);
+                    await Json(ctx, new { ok = true });
+                    return;
+
                 case "POST /api/monitorstop":
                     _dm.StopMeter();
                     await Json(ctx, new { ok = true });
@@ -295,6 +302,24 @@ public sealed class WebServer
         catch
         {
             return def;
+        }
+    }
+
+    private static void GetMacName(HttpListenerContext ctx, out string mac, out string name)
+    {
+        mac = "";
+        name = "";
+        using var reader = new StreamReader(ctx.Request.InputStream);
+        var body = reader.ReadToEnd();
+        if (string.IsNullOrWhiteSpace(body)) return;
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.TryGetProperty("mac", out var m)) mac = m.GetString() ?? "";
+            if (doc.RootElement.TryGetProperty("name", out var n)) name = n.GetString() ?? "";
+        }
+        catch
+        {
         }
     }
 

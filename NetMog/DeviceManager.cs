@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 using NetMog.Core;
 using NetMog.Models;
 
@@ -9,6 +10,8 @@ public sealed class DeviceManager
     private readonly NetworkInfo _net;
     private readonly Dictionary<string, DeviceInfo> _devices = new();
     private readonly HashSet<string> _knownMacs = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _deviceNames = new(StringComparer.OrdinalIgnoreCase);
+    private readonly string _namesFile;
     private readonly object _lock = new();
     private int _scanCount;
     private volatile bool _scanning;
@@ -37,6 +40,8 @@ public sealed class DeviceManager
     public DeviceManager(NetworkInfo net)
     {
         _net = net;
+        _namesFile = Path.Combine(AppContext.BaseDirectory, "device-names.json");
+        LoadDeviceNames();
         Poisoner = new ArpPoisoner(net);
         Meter = new TrafficMeter(net, Poisoner, Snapshot);
         Scanner = new ArpScanner(net);
@@ -49,13 +54,63 @@ public sealed class DeviceManager
 
     public void Start() => Poisoner.Start();
 
+    private void LoadDeviceNames()
+    {
+        try
+        {
+            if (File.Exists(_namesFile))
+            {
+                var json = File.ReadAllText(_namesFile);
+                var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+                if (dict != null)
+                {
+                    foreach (var kv in dict)
+                        _deviceNames[kv.Key] = kv.Value;
+                }
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    private void SaveDeviceNames()
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(_deviceNames, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(_namesFile, json);
+        }
+        catch
+        {
+        }
+    }
+
+    public void SetDeviceName(string mac, string name)
+    {
+        lock (_lock)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                _deviceNames.Remove(mac);
+            else
+                _deviceNames[mac] = name.Trim();
+            SaveDeviceNames();
+        }
+    }
+
     public List<DeviceInfo> Snapshot()
     {
         lock (_lock)
         {
-            return _devices.Values
+            var list = _devices.Values
                 .OrderBy(d => d.Ip, new IpComparer())
                 .ToList();
+            foreach (var d in list)
+            {
+                if (_deviceNames.TryGetValue(d.Mac, out var custom))
+                    d.CustomName = custom;
+            }
+            return list;
         }
     }
 
