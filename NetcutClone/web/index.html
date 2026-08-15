@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NetcutClone — ARP Network Controller</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="sc">✂</span> NETCUT<span class="acc">CLONE</span></div>
+  <div class="sub">Free ARP network controller</div>
+  <div class="spacer"></div>
+  <div class="netinfo" id="netinfo">connecting…</div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" id="tab-btn-devices" data-tab="devices">Devices</button>
+  <button class="tab" id="tab-btn-records" data-tab="records">Records</button>
+  <div class="spacer"></div>
+  <label class="hideip" title="Blur IP and MAC columns"><input type="checkbox" id="hideip"> Hide IP</label>
+</nav>
+
+<div class="statusline" id="statusline">Starting…</div>
+
+<main>
+  <section class="tabpage active" id="page-devices">
+    <div class="columns">
+
+      <aside class="col managing" id="col-managing">
+        <div class="colhead"><span class="ct">✂ Managing</span><b class="cnt" id="cnt-managing">0</b></div>
+        <div class="dropzone" id="zone-managing">
+          <div class="zicon">✂</div>
+          <div class="zhint">Drag devices here<br>to cut their access</div>
+        </div>
+        <div class="cards" id="cards-managing"></div>
+      </aside>
+
+      <section class="col users">
+        <div class="colhead"><span class="ct">📡 Network Users</span><b class="cnt" id="cnt-users">0</b>
+          <div class="spacer"></div>
+          <button id="btnScan" class="iconbtn" title="Scan network">📡 Scan</button>
+        </div>
+        <div class="cards" id="cards-users"></div>
+      </section>
+
+      <aside class="col trusted">
+        <div class="colhead"><span class="ct">🛡 Trusted Users</span><b class="cnt" id="cnt-trusted">0</b></div>
+        <div class="cards" id="cards-trusted"></div>
+      </aside>
+
+    </div>
+  </section>
+
+  <section class="tabpage" id="page-records">
+    <div class="recwrap" id="records"></div>
+  </section>
+</main>
+
+<footer class="botbar">
+  <label class="tgl" id="tgl-defender" title="Re-assert your ARP identity to survive other cutters">
+    <span class="tgname">Defender</span><span class="switch" id="sw-defender"></span>
+  </label>
+  <label class="tgl" id="tgl-netlock" title="Cut any device that joins the network after locking">
+    <span class="tgname">netLock</span><span class="switch" id="sw-netlock"></span>
+  </label>
+  <button id="btnRefresh" class="iconbtn" title="Rescan network">↻</button>
+  <input id="search" class="searchbox" placeholder="Search name, IP, MAC…">
+  <div class="spacer"></div>
+  <span class="pkts" id="pkts"></span>
+  <button id="btnCutAll" class="danger">Cut All</button>
+  <button id="btnRestoreAll" class="ok">Restore All</button>
+  <button id="btnExit" title="Shut down server">Exit</button>
+</footer>
+
+<div class="context" id="ctx"></div>
+<div class="toasts" id="toasts"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>
