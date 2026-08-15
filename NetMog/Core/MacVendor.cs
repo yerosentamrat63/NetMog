@@ -1,6 +1,6 @@
 using System.Net.NetworkInformation;
 
-namespace NetcutClone.Core;
+namespace NetMog.Core;
 
 /// <summary>
 /// Best-effort MAC OUI vendor identification.

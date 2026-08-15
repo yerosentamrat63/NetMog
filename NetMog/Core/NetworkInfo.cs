@@ -4,7 +4,7 @@ using System.Net.Sockets;
 using SharpPcap;
 using SharpPcap.LibPcap;
 
-namespace NetcutClone.Core;
+namespace NetMog.Core;
 
 public sealed class NetworkInfo
 {

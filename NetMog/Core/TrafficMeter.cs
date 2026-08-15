@@ -1,8 +1,8 @@
 using System.Net;
 using System.Net.NetworkInformation;
-using NetcutClone.Models;
+using NetMog.Models;
 
-namespace NetcutClone.Core;
+namespace NetMog.Core;
 
 /// <summary>
 /// Bandwidth meter that replicates NetCut's "Test" feature (verified by

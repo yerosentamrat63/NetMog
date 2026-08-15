@@ -3,10 +3,10 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Xml;
-using NetcutClone.Core;
+using NetMog.Core;
 using SharpPcap;
 
-namespace NetcutClone;
+namespace NetMog;
 
 public sealed class WebServer
 {
@@ -199,7 +199,7 @@ public sealed class WebServer
                     {
                         metering = _dm.MeteredIp,
                         running = _dm.Meter.IsMetering,
-                        mode = "netcut-style",
+                        mode = "NetMog",
                         rxFrames = _dm.Meter.RxFrames,
                         rxIPv4 = _dm.Meter.RxIPv4,
                         relayedUp = _dm.Meter.RelayedUp,
@@ -432,7 +432,7 @@ public sealed class WebServer
     private static async Task ServeStatic(HttpListenerContext ctx, string name)
     {
         var asm = Assembly.GetExecutingAssembly();
-        using var stream = asm.GetManifestResourceStream($"NetcutClone.web.{name}");
+        using var stream = asm.GetManifestResourceStream($"NetMog.web.{name}");
         if (stream == null)
         {
             ctx.Response.StatusCode = 404;

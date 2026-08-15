@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 
-namespace NetcutClone.Core;
+namespace NetMog.Core;
 
 /// <summary>
 /// Scans the subnet using the Windows OS ARP stack (SendARP + neighbor table),

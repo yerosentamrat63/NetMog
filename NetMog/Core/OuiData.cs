@@ -1,6 +1,6 @@
 ﻿// Auto-generated from the Wireshark manuf database (IEEE OUI/MA-L).
 // Do not edit by hand. Regenerate with tools/gen-oui.ps1.
-namespace NetcutClone.Core;
+namespace NetMog.Core;
 public static class OuiData
 {
     private static readonly System.Collections.Generic.Dictionary<string, string> _table = Build();

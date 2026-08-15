@@ -1,8 +1,8 @@
 using System.Net;
-using NetcutClone.Core;
-using NetcutClone.Models;
+using NetMog.Core;
+using NetMog.Models;
 
-namespace NetcutClone;
+namespace NetMog;
 
 public sealed class DeviceManager
 {

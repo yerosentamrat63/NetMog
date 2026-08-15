@@ -1,4 +1,4 @@
-namespace NetcutClone.Models;
+namespace NetMog.Models;
 
 public enum DeviceState
 {

@@ -1,7 +1,7 @@
 using System.Net;
 using System.Runtime.InteropServices;
 
-namespace NetcutClone.Core;
+namespace NetMog.Core;
 
 /// <summary>
 /// OS-based ARP resolution via the Windows IP Helper API.

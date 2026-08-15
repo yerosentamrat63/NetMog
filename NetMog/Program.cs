@@ -1,10 +1,10 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
-using NetcutClone.Core;
+using NetMog.Core;
 using SharpPcap;
 
-namespace NetcutClone;
+namespace NetMog;
 
 static class Program
 {
@@ -18,7 +18,7 @@ static class Program
     {
         if (!IsAdministrator())
         {
-            Msg("NetcutClone must run as Administrator to inject raw ARP packets.",
+            Msg("NetMog must run as Administrator to inject raw ARP packets.",
                 "Administrator required");
             return;
         }

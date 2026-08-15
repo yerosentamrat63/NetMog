@@ -150,7 +150,7 @@ function renderStatus() {
   const gw = state.info ? `${state.info.gateway}` : "?";
   $("statusline").innerHTML =
     (state.scanning ? `<span class="sc">Scanning network…</span> · ` : "") +
-    `Netcut running under Admin · you <span class="on">${ip}</span> · GW <span class="on">${gw}</span>` +
+    `NetMog running under Admin · you <span class="on">${ip}</span> · GW <span class="on">${gw}</span>` +
     ` · pkts <span class="on">${state.packets.toLocaleString()}</span>` +
     ` · cut ${state.killed}` +
     (state.netLock ? ` · <span class="sc">netLock ON</span>` : "");
@@ -397,7 +397,7 @@ document.addEventListener("click", () => (ctx.style.display = "none"));
   } catch {
     $("netinfo").textContent = "server unreachable";
   }
-  log("warn", "Connected to NetcutClone server");
+  log("warn", "Connected to NetMog server");
   poll();
   setInterval(poll, 1000);
 })();

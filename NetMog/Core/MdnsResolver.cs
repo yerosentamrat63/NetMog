@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-namespace NetcutClone.Core;
+namespace NetMog.Core;
 
 /// <summary>
 /// mDNS (Bonjour) reverse-PTR resolver. Phones, TVs and smart-home devices

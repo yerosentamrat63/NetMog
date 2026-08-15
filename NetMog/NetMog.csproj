@@ -6,8 +6,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <AssemblyName>NetcutClone</AssemblyName>
-    <RootNamespace>NetcutClone</RootNamespace>
+    <AssemblyName>NetMog</AssemblyName>
+    <RootNamespace>NetMog</RootNamespace>
     <Version>1.0.0</Version>
   </PropertyGroup>
 

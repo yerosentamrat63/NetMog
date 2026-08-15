@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-namespace NetcutClone.Core;
+namespace NetMog.Core;
 
 public static class NetbiosResolver
 {

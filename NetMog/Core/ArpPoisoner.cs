@@ -5,9 +5,9 @@ using System.Net.Sockets;
 using PacketDotNet;
 using SharpPcap;
 using SharpPcap.LibPcap;
-using NetcutClone.Models;
+using NetMog.Models;
 
-namespace NetcutClone.Core;
+namespace NetMog.Core;
 
 /// <summary>
 /// Dual-mode ARP poisoner:
@@ -279,7 +279,7 @@ public sealed class ArpPoisoner : IDisposable
         RunQuiet("netsh", $"interface ip add neighbors \"{ifDesc}\" {victimIp} {fake}");
 
         // 2. Add Windows Firewall rules to block traffic to/from the victim.
-        var ruleName = $"NetcutClone_Block_{victimIp.Replace('.', '_')}";
+        var ruleName = $"NetMog_Block_{victimIp.Replace('.', '_')}";
         // Remove any existing rule first.
         RunQuiet("netsh", $"advfirewall firewall delete rule name=\"{ruleName}\"");
         // Block outbound to victim.
@@ -316,7 +316,7 @@ public sealed class ArpPoisoner : IDisposable
         RunQuiet("netsh", $"interface ip delete neighbors \"{ifDesc}\" {victimIp}");
 
         // Remove firewall rules.
-        var ruleName = $"NetcutClone_Block_{victimIp.Replace('.', '_')}";
+        var ruleName = $"NetMog_Block_{victimIp.Replace('.', '_')}";
         RunQuiet("netsh", $"advfirewall firewall delete rule name=\"{ruleName}\"");
         RunQuiet("netsh", $"advfirewall firewall delete rule name=\"{ruleName}_in\"");
     }
