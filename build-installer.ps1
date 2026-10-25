@@ -94,10 +94,12 @@ Write-Host "      -> dist\$(Split-Path $zip -Leaf)" -ForegroundColor DarkGray
 
 # ---- 3. installer (optional) ----------------------------------------------
 Write-Host "[3/4] Building the setup wizard..." -ForegroundColor Cyan
-$iscc = @(
-    (Join-Path $env:ProgramFiles "Inno Setup 6/ISCC.exe"),
-    (Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6/ISCC.exe")
-) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+# Inno Setup is usually machine-wide, but winget installs it per user.
+$isccCandidates = @()
+if ($env:ProgramFiles)        { $isccCandidates += Join-Path $env:ProgramFiles "Inno Setup 6/ISCC.exe" }
+if (${env:ProgramFiles(x86)}) { $isccCandidates += Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6/ISCC.exe" }
+if ($env:LOCALAPPDATA)        { $isccCandidates += Join-Path $env:LOCALAPPDATA "Programs/Inno Setup 6/ISCC.exe" }
+$iscc = $isccCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
 
 if ($SkipInstaller) {
     Write-Host "      skipped (-SkipInstaller)" -ForegroundColor DarkGray

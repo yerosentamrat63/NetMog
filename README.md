@@ -4,6 +4,8 @@
 
 NetMog is a Windows network controller in the spirit of NetCut, rebuilt as a self-contained app with a local browser UI. It discovers the machines on your network, identifies them by hardware address (so a DHCP change can't hide a device), poisons their ARP entry to cut them off, and relays a device's traffic when you ask it to measure or cap its speed.
 
+![NetMog's inventory: device cards with names, MACs, vendors and per-device actions, the trusted list on the right, recent activity, and the Defender Mode / netLock switches](docs/screenshot.png)
+
 > [!WARNING]
 > **Use NetMog only on networks you own or are responsible for administering.**
 > It works by answering ARP requests on other people's behalf — that is a man-in-the-middle position. Pointing it at a network you do not control (a school, an office, a café, a neighbour's Wi-Fi) is illegal in most countries and is a quick way to get yourself banned or prosecuted. Everything else in this README assumes you have permission.
@@ -73,7 +75,7 @@ Npcap is not bundled: its free licence does not allow redistributing the install
 
 Windows will show **"Windows protected your PC"** the first time, because the executable is not code-signed. Click **More info → Run anyway**. If your antivirus quarantines it, that is a false positive caused by the ARP-spoofing behaviour the app is built on — exclude the folder if you trust the source (this repo).
 
-An `NetMog_Setup_v1.0.0.exe` installer is also produced by the build script (`build-installer.ps1`) if you prefer Start-menu and uninstall entries.
+**Prefer an installer?** `NetMog_Setup_v1.0.0.exe` sits next to the zip on the same Releases page. It installs to `Program Files\NetMog`, adds Start-menu and optional desktop shortcuts, and registers an uninstaller. It still does not bundle Npcap — setup offers to open npcap.com when the driver is missing.
 
 ### From source
 
@@ -168,7 +170,7 @@ If NetMog misbehaves badly, run **Restore All** before quitting, and delete `%LO
 
 ## Build from source
 
-Requirements: .NET 8 SDK, Windows, and (for the installer) [Inno Setup 6](https://jrsoftware.org/isdl.php).
+Requirements: .NET 8 SDK, Windows, and (for the installer) [Inno Setup 6.3 or newer](https://jrsoftware.org/isdl.php).
 
 ```powershell
 # Publish a self-contained single-file exe + build the distributable zip
@@ -215,6 +217,7 @@ NetMog/
 installer/setup.iss     Inno Setup script
 installer/notice.txt    shown before installation
 build-installer.ps1     publish + zip + installer
+docs/screenshot.png     the image at the top of this README
 dist/                   build output (git-ignored)
 ```
 
