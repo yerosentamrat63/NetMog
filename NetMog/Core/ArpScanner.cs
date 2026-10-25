@@ -4,15 +4,11 @@ using System.Net.Sockets;
 namespace NetMog.Core;
 
 /// <summary>
-/// Scans the subnet using the Windows OS ARP stack (SendARP + neighbor table),
-/// which works reliably on Wi-Fi adapters where raw Npcap injection is dropped.
+/// Scans the subnet using the Windows OS ARP stack (SendARP + neighbor table).
 /// </summary>
-public sealed class ArpScanner : IDisposable
+public sealed class ArpScanner
 {
     private readonly NetworkInfo _net;
-
-    public long Probed { get; private set; }
-    public long Found { get; private set; }
 
     public ArpScanner(NetworkInfo net) => _net = net;
 
@@ -37,7 +33,6 @@ public sealed class ArpScanner : IDisposable
             try
             {
                 udp.Send(new byte[1], 1, new IPEndPoint(ip, 9));
-                Probed++;
             }
             catch
             {
@@ -58,11 +53,6 @@ public sealed class ArpScanner : IDisposable
         var self = ArpWinApi.ResolveMac(_net.LocalIp);
         if (self != null) result[_net.LocalIpString] = self;
 
-        Found = result.Count;
         return result;
-    }
-
-    public void Dispose()
-    {
     }
 }

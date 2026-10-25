@@ -11,12 +11,10 @@ public sealed class NetworkInfo
     public required string AdapterName { get; set; }
     public required string AdapterDescription { get; init; }
     public required IPAddress LocalIp { get; init; }
-    public required IPAddress SubnetMask { get; init; }
     public required IPAddress GatewayIp { get; init; }
     public required PhysicalAddress LocalMac { get; init; }
     public required uint NetworkAddr { get; init; }
     public required uint BroadcastAddr { get; init; }
-    public required int PrefixLength { get; init; }
 
     public PhysicalAddress? GatewayMac { get; set; }
     public string LocalIpString => LocalIp.ToString();
@@ -51,12 +49,10 @@ public sealed class NetworkInfo
                 AdapterName = nic.Name,
                 AdapterDescription = nic.Description,
                 LocalIp = ip,
-                SubnetMask = MaskToIp(mask),
                 GatewayIp = gw.Address,
                 LocalMac = nic.GetPhysicalAddress(),
                 NetworkAddr = network,
                 BroadcastAddr = broadcast,
-                PrefixLength = prefix,
             };
         }
         return null;
@@ -77,8 +73,6 @@ public sealed class NetworkInfo
     public static uint PrefixToMask(int prefix) =>
         prefix == 0 ? 0 : 0xFFFFFFFFu << (32 - prefix);
 
-    public static IPAddress MaskToIp(uint mask) => UintToIp(mask);
-
     public static string FormatMac(PhysicalAddress mac)
     {
         var b = mac.GetAddressBytes();
@@ -87,15 +81,18 @@ public sealed class NetworkInfo
 
     public static PhysicalAddress ParseMac(string mac) => PhysicalAddress.Parse(mac.Replace(":", "-"));
 
-    public PhysicalAddress ParseMacSafe(string mac)
+    /// <summary>Parses a MAC, or returns null when it is not a usable address.</summary>
+    public static PhysicalAddress? ParseMacSafe(string mac)
     {
+        if (string.IsNullOrWhiteSpace(mac)) return null;
         try
         {
-            return ParseMac(mac);
+            var parsed = ParseMac(mac);
+            return parsed.GetAddressBytes().Length == 6 ? parsed : null;
         }
         catch
         {
-            return LocalMac;
+            return null;
         }
     }
 
@@ -103,7 +100,11 @@ public sealed class NetworkInfo
     {
         // CaptureDeviceList caches device objects; each engine must get its own
         // handle so scanner/poisoner/meter can all be open simultaneously.
-        var cached = (LibPcapLiveDevice)CaptureDeviceList.Instance.First(d => d.Name == AdapterName);
+        var cached = CaptureDeviceList.Instance
+            .OfType<LibPcapLiveDevice>()
+            .FirstOrDefault(d => d.Name == AdapterName);
+        if (cached?.Interface == null)
+            throw new InvalidOperationException($"pcap device '{AdapterName}' is not available");
         return new LibPcapLiveDevice(cached.Interface);
     }
 }

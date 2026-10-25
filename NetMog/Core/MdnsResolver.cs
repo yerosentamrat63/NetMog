@@ -54,6 +54,15 @@ public static class MdnsResolver
         return null;
     }
 
+    /// <summary>Trims the mDNS suffix and any trailing dot.</summary>
+    public static string CleanName(string name)
+    {
+        var value = name.Trim().TrimEnd('.');
+        if (value.EndsWith(".local", StringComparison.OrdinalIgnoreCase))
+            value = value[..^6];
+        return value.Trim();
+    }
+
     private static byte[] BuildReversePtrQuery(IPAddress ip)
     {
         var octets = ip.GetAddressBytes();

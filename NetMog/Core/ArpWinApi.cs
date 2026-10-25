@@ -5,7 +5,6 @@ namespace NetMog.Core;
 
 /// <summary>
 /// OS-based ARP resolution via the Windows IP Helper API.
-/// Avoids Npcap injection entirely, which some Wi-Fi drivers drop silently.
 /// </summary>
 public static class ArpWinApi
 {

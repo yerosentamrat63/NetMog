@@ -1,81 +1,235 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NetMog — ARP Network Controller</title>
-<link rel="stylesheet" href="/style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NETMOG — Live Network Sniffer & Device Inventory</title>
+  <meta name="description" content="NETMOG - Free ARP network controller and sniffer. Monitor, manage, and control devices on your local network.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Poiret+One&family=Bitcount+Single:wght@100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 
-<header>
-  <div class="logo"><span class="sc">✂</span> NET<span class="acc">MOG</span></div>
-  <div class="sub">Free ARP network controller</div>
-  <div class="spacer"></div>
-  <div class="netinfo" id="netinfo">connecting…</div>
+<!-- ===== TOP BAR ===== -->
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="logo">
+      <svg class="logo-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="2"/>
+        <path d="M4.93 19.07a10 10 0 0 1 0-14.14M7.76 16.24a6 6 0 0 1 0-8.49m8.48 8.49a6 6 0 0 0 0-8.49m2.83 11.32a10 10 0 0 0 0-14.14"/>
+      </svg>
+      <span class="logo-word">NETMOG</span>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="hstats" id="hstats">
+      <div class="hstat">
+        <div class="hstat-label">GATEWAY</div>
+        <div class="hstat-value" id="stat-gw">—</div>
+      </div>
+    </div>
+    <button class="circ-btn quit-btn" id="btnQuit" title="Quit NetMog — restores every cut device" aria-label="Quit NetMog">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+        <line x1="12" y1="2" x2="12" y2="12"/>
+      </svg>
+    </button>
+  </div>
 </header>
 
-<nav class="tabs">
-  <button class="tab active" id="tab-btn-devices" data-tab="devices">Devices</button>
-  <button class="tab" id="tab-btn-records" data-tab="records">Records</button>
-  <div class="spacer"></div>
-  <label class="hideip" title="Blur IP and MAC columns"><input type="checkbox" id="hideip"> Hide IP</label>
-</nav>
+<div class="layout">
 
-<div class="statusline" id="statusline">Starting…</div>
-
-<main>
-  <section class="tabpage active" id="page-devices">
-    <div class="columns">
-
-      <aside class="col managing" id="col-managing">
-        <div class="colhead"><span class="ct">✂ Managing</span><b class="cnt" id="cnt-managing">0</b></div>
-        <div class="dropzone" id="zone-managing">
-          <div class="zicon">✂</div>
-          <div class="zhint">Drag devices here<br>to cut their access</div>
-        </div>
-        <div class="cards" id="cards-managing"></div>
-      </aside>
-
-      <section class="col users">
-        <div class="colhead"><span class="ct">📡 Network Users</span><b class="cnt" id="cnt-users">0</b>
-          <div class="spacer"></div>
-          <button id="btnScan" class="iconbtn" title="Scan network">📡 Scan</button>
-        </div>
-        <div class="cards" id="cards-users"></div>
-      </section>
-
-      <aside class="col trusted">
-        <div class="colhead"><span class="ct">🛡 Trusted Users</span><b class="cnt" id="cnt-trusted">0</b></div>
-        <div class="cards" id="cards-trusted"></div>
-      </aside>
-
+  <!-- LEFT RAIL -->
+  <aside class="rail left">
+    <div class="isolate-zone" id="col-managing">
+      <div class="dropzone" id="zone-managing">
+        <span class="dz-pulse"></span>
+        <svg class="dz-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
+          <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
+          <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/>
+          <path d="M2 12a10 10 0 0 1 18-6"/>
+          <path d="M2 16h.01"/>
+          <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
+          <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/>
+          <path d="M8.65 22c.21-.66.45-1.32.57-2"/>
+          <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
+        </svg>
+        <p class="dz-text" id="dz-text">Drop to kill</p>
+      </div>
+      <div class="managed-cards cards" id="cards-managing"></div>
     </div>
-  </section>
+  </aside>
 
-  <section class="tabpage" id="page-records">
-    <div class="recwrap" id="records"></div>
-  </section>
-</main>
+  <!-- MAIN -->
+  <main class="center">
+    <div class="tabpage active" id="page-devices">
+      <div class="inv-header">
+        <div class="inv-left">
+          <div class="inv-sup">NETWORK INVENTORY</div>
+          <h1 class="inv-title">Active Connections : <span class="inv-count" id="cnt-active">0</span></h1>
+        </div>
+        <button class="circ-btn" id="btnScan" aria-label="Rescan network" title="Scan / Refresh network">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+            <path d="M21 3v5h-5"/>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+            <path d="M3 21v-5h5"/>
+          </svg>
+        </button>
+      </div>
+      <div class="dev-grid cards" id="cards-users"></div>
+    </div>
+  </main>
 
+  <!-- RIGHT RAIL -->
+  <aside class="rail right">
+    <div class="rpanel trust-panel">
+      <div class="rpanel-hd">
+        <span class="rpanel-title">TRUSTED ENTITIES</span>
+        <span class="secure-badge">SECURE</span>
+      </div>
+      <div class="trust-list cards" id="cards-trusted"></div>
+    </div>
+    <div class="rpanel history-panel">
+      <div class="rpanel-hd">
+        <span class="rpanel-title">RECENT ACTIVITY</span>
+      </div>
+      <div class="history-list" id="history-list"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- ===== BOTTOM BAR ===== -->
 <footer class="botbar">
-  <label class="tgl" id="tgl-defender" title="Re-assert your ARP identity to survive other cutters">
-    <span class="tgname">Defender</span><span class="switch" id="sw-defender"></span>
-  </label>
-  <label class="tgl" id="tgl-netlock" title="Cut any device that joins the network after locking">
-    <span class="tgname">netLock</span><span class="switch" id="sw-netlock"></span>
-  </label>
-  <button id="btnRefresh" class="iconbtn" title="Rescan network">↻</button>
-  <input id="search" class="searchbox" placeholder="Search name, IP, MAC…">
-  <div class="spacer"></div>
-  <span class="pkts" id="pkts"></span>
-  <button id="btnCutAll" class="danger">Cut All</button>
-  <button id="btnRestoreAll" class="ok">Restore All</button>
-  <button id="btnExit" title="Shut down server">Exit</button>
+  <div class="footer-toggles">
+    <label class="tgl" id="tgl-defender" title="Re-assert your ARP identity to survive other cutters">
+      <span class="tgname">Defender Mode</span>
+      <span class="switch"></span>
+    </label>
+    <label class="tgl" id="tgl-netlock" title="Auto-cut unknown devices. Devices you name or restore are trusted, and phones that rotate their private MAC are flagged instead of cut.">
+      <span class="tgname">netLock Protocol</span>
+      <span class="switch"></span>
+    </label>
+  </div>
+
+  <div class="search-wrap">
+    <svg class="search-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input id="search" class="searchbox" placeholder="Search by IP, MAC, or Vendor...">
+    <span class="kbd-badge">CMD<br>+K</span>
+  </div>
+
+  <div class="global-actions">
+    <button id="btnCutAll" class="bbtn danger" title="Kill all unprotected devices">Kill All</button>
+    <button id="btnRestoreAll" class="bbtn ok" title="Restore all killed devices">Restore All</button>
+  </div>
 </footer>
 
+<!-- Overlays -->
 <div class="context" id="ctx"></div>
 <div class="toasts" id="toasts"></div>
+
+<!-- ===== Name device dialog ===== -->
+<div class="rename-overlay" id="rename-overlay" hidden>
+  <div class="rename-dialog">
+    <div class="rename-head">
+      <span class="rename-title">NAME DEVICE</span>
+      <button class="rename-close" id="rename-close" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <p class="rename-sub" id="rename-sub">—</p>
+    <input id="rename-input" class="rename-input" type="text" maxlength="48" placeholder="Device name">
+    <p class="rename-hint">A name is only a label — it does not trust the device. netLock still cuts a device you have not approved.</p>
+    <div class="rename-actions">
+      <button class="bbtn" id="rename-cancel">Cancel</button>
+      <button class="bbtn rename-save" id="rename-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Bandwidth Monitor dialog (Lovable design) ===== -->
+<div class="mon-overlay" id="mon-overlay" hidden>
+  <div class="mon-dialog">
+    <div class="mon-head">
+      <div class="mon-live">
+        <span class="mon-dotwrap"><span class="mon-dotping"></span><span class="mon-dot"></span></span>
+        <span class="mon-live-label">LIVE BANDWIDTH</span>
+      </div>
+      <button class="mon-close" id="mon-close" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+      <h2 class="mon-ip" id="mon-ip">—</h2>
+      <p class="mon-mac" id="mon-mac">—</p>
+    </div>
+    <div class="mon-channels">
+      <div class="mon-channel">
+        <div class="mon-ch-hd">
+          <span class="mon-ch-ico down">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
+            </svg>
+          </span>
+          <span class="mon-ch-label">DOWNLOAD</span>
+          <span class="mon-ch-peak" id="mon-down-peak">PEAK 0.0</span>
+        </div>
+        <div class="mon-ch-val">
+          <span class="mon-ch-num" id="mon-down-val">0.0</span>
+          <span class="mon-ch-unit" id="mon-down-unit">KB</span>
+        </div>
+        <div class="mon-ch-spark down" id="mon-down-spark"></div>
+        <div class="mon-ch-ft">
+          <span id="mon-down-avg">AVG 0.0 Mbps</span>
+          <span>WINDOW 16s</span>
+        </div>
+      </div>
+      <div class="mon-channel">
+        <div class="mon-ch-hd">
+          <span class="mon-ch-ico up">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+            </svg>
+          </span>
+          <span class="mon-ch-label">UPLOAD</span>
+          <span class="mon-ch-peak" id="mon-up-peak">PEAK 0.0</span>
+        </div>
+        <div class="mon-ch-val">
+          <span class="mon-ch-num" id="mon-up-val">0.0</span>
+          <span class="mon-ch-unit" id="mon-up-unit">KB</span>
+        </div>
+        <div class="mon-ch-spark up" id="mon-up-spark"></div>
+        <div class="mon-ch-ft">
+          <span id="mon-up-avg">AVG 0.0 Mbps</span>
+          <span>WINDOW 16s</span>
+        </div>
+      </div>
+    </div>
+    <div class="mon-foot">
+      <div class="mon-foot-l">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        <span>Throughput</span>
+        <span class="mon-total" id="mon-total">0.0 KB</span>
+        <span class="mon-drop" id="mon-drop"></span>
+      </div>
+      <div class="mon-limit">
+        <span class="mon-limit-label">LIMIT</span>
+        <input id="mon-limit" class="mon-limit-input" type="number" min="0" step="50" placeholder="unlimited" aria-label="Bandwidth limit in kbps">
+        <span class="mon-limit-unit">kbps</span>
+        <button id="mon-limit-apply" class="bbtn">Apply</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="/app.js"></script>
 </body>

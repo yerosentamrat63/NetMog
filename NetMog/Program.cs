@@ -11,11 +11,22 @@ static class Program
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int MessageBoxW(IntPtr hWnd, string text, string caption, uint type);
 
-    private static readonly ManualResetEventSlim _exit = new();
+    private const string MutexName = @"Global\NetMog_SingleInstance_Mutex";
+    private static readonly string PortFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NetMog", "port.txt");
 
     [STAThread]
     static void Main()
     {
+        using var mutex = new Mutex(true, MutexName, out bool createdNew);
+        if (!createdNew)
+        {
+            // Single-instance: NetMog is already running in background.
+            // Open the browser to the existing server instance and exit.
+            int runningPort = ReadSavedPort();
+            OpenBrowser(runningPort > 0 ? runningPort : 8899);
+            return;
+        }
+
         if (!IsAdministrator())
         {
             Msg("NetMog must run as Administrator to inject raw ARP packets.",
@@ -43,33 +54,48 @@ static class Program
 
         if (!MatchPcapAdapter(net))
         {
-            Msg("No Npcap device matches the active network adapter.", "Npcap device not found");
+            Msg("No pcap device matches the active network adapter.", "pcap device not found");
             return;
         }
 
-        var dm = new DeviceManager(net);
-        dm.Start();
-
-        var port = PickPort();
-        if (port == 0)
-        {
-            Msg("Could not find a free local port for the web UI.", "Server error");
-            return;
-        }
-
-        var server = new WebServer(dm, net, port);
+        DeviceManager? dm = null;
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => dm?.Dispose();
+        AppDomain.CurrentDomain.UnhandledException += (_, _) => dm?.Dispose();
         try
         {
-            server.Start();
-        }
-        catch (Exception ex)
-        {
-            Msg($"Could not start the local web server: {ex.Message}", "Server error");
-            return;
-        }
+            dm = new DeviceManager(net);
+            dm.Start();
 
-        OpenBrowser(port);
-        server.WaitForExit();
+            var port = PickPort();
+            if (port == 0)
+            {
+                Msg("Could not find a free local port for the web UI.", "Server error");
+                return;
+            }
+
+            SavePort(port);
+
+            var server = new WebServer(dm, net, port);
+            try
+            {
+                server.Start();
+            }
+            catch (Exception ex)
+            {
+                Msg($"Could not start the local web server: {ex.Message}", "Server error");
+                return;
+            }
+
+            dm.StartScan();
+
+            OpenBrowser(port);
+            server.WaitForExit();
+        }
+        finally
+        {
+            // Always undo our ARP poisoning, whatever way we exit.
+            dm?.Dispose();
+        }
     }
 
     private static bool MatchPcapAdapter(NetworkInfo net)
@@ -125,6 +151,28 @@ static class Program
         catch
         {
         }
+    }
+
+    private static void SavePort(int port)
+    {
+        try
+        {
+            var dir = Path.GetDirectoryName(PortFilePath);
+            if (dir != null && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            File.WriteAllText(PortFilePath, port.ToString());
+        }
+        catch { }
+    }
+
+    private static int ReadSavedPort()
+    {
+        try
+        {
+            if (File.Exists(PortFilePath) && int.TryParse(File.ReadAllText(PortFilePath).Trim(), out int port))
+                return port;
+        }
+        catch { }
+        return 0;
     }
 
     private static bool IsAdministrator() =>
