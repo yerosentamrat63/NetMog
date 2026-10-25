@@ -1,0 +1,16 @@
+NetMog — read this first
+========================
+
+NetMog cuts devices off a network by answering ARP on their behalf. That is
+the same trick an attacker uses, so use it only on a network you own or are
+responsible for administering. Running it against a school, an office, a cafe
+or a neighbour's Wi-Fi is illegal in most countries.
+
+NetMog needs the Npcap packet driver. It is not bundled (Npcap's free licence
+forbids redistributing its installer). If it is missing, this setup offers to
+open npcap.com — install it with "Install Npcap in WinPcap API-compatible Mode"
+checked, then start NetMog.
+
+The app asks for administrator rights every time it starts: sending raw packets
+requires them. It stores its state (names, limits, netLock, history) in
+%LOCALAPPDATA%\NetMog, which is left in place if you uninstall.

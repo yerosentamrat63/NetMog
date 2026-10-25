@@ -9,6 +9,14 @@ public sealed class WebServer
 {
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
+    // Comes from <Version> in NetMog.csproj, so the UI, the exe and the
+    // installer can never disagree about what is running.
+    private static readonly string AppVersion =
+        typeof(WebServer).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion.Split('+')[0]
+        ?? "0.0.0";
+
     private readonly HttpListener _listener = new();
     private readonly DeviceManager _dm;
     private readonly NetworkInfo _net;
@@ -87,7 +95,7 @@ public sealed class WebServer
                         gateway = _net.GatewayIpString,
                         localMac = _net.LocalMacString,
                         gatewayMac = _net.GatewayMacString,
-                        version = "1.0.0",
+                        version = AppVersion,
                     });
                     return;
 

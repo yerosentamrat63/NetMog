@@ -1,5 +1,16 @@
+# Build output
 bin/
 obj/
-.playwright-mcp/
-*.png
+dist/
+
+# Local editor / tooling state
+.vs/
 *.user
+*.suo
+.freebuff/
+.playwright-mcp/
+
+# Local artifacts
+*.pdb
+*.zip
+*.log

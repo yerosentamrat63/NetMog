@@ -8,7 +8,16 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>NetMog</AssemblyName>
     <RootNamespace>NetMog</RootNamespace>
+
+    <!-- Single source of truth for the version: read by /api/info, stamped into
+         the exe's properties, and passed to the installer by build-installer.ps1. -->
     <Version>1.0.0</Version>
+    <Product>NetMog</Product>
+    <AssemblyTitle>NetMog</AssemblyTitle>
+    <Company>NetMog Software</Company>
+    <Description>ARP-based network controller for your own LAN: see every device, cut or restore access, and meter or cap per-device bandwidth.</Description>
+    <Copyright>Copyright (c) 2026 NetMog contributors</Copyright>
+    <RepositoryUrl>https://github.com/yerosentamrat63/NetMog</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
